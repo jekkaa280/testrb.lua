@@ -144,6 +144,7 @@ local settings = {
     esp = false,
     noclip = false,
     speed = false,
+    jump = false,
     fullbright = false,
     nofog = false,
     zoom = false,
@@ -159,6 +160,7 @@ local autoAimDistance = 100 -- Увеличена начальная диста�
 local pursuitDistance = math.huge
 local pursuitSpeed = 30 -- СКОРОСТЬ ПРЕСЛЕДОВАНИЯ
 local speedHackValue = 30 -- Значение скорости для Speed Hack
+local jumpHackValue = 50 -- Значение прыжка для Jump Hack
 local teleportDistance = 50 -- Дистанция телепорта по умолчанию
 local teleportCooldown = 0.1 -- Кулдаун между телепортами
 local lastTeleportTime = 0
@@ -192,9 +194,9 @@ local autoAimLine = nil
 local teleportScreenButton = nil
 
 -- ========== ФУНКЦИЯ СОЗДАНИЯ КНОПКИ ==========
-local function createCheatButton(name, description, id, showAdjustment, extraHeight, showModeSelection, showSpeedAdjustment, showTeleportAdjustment)
+local function createCheatButton(name, description, id, showAdjustment, extraHeight, showModeSelection, showSpeedAdjustment, showTeleportAdjustment, showJumpAdjustment)
     local ButtonFrame = Instance.new("Frame")
-    local totalHeight = (showAdjustment and 110 or 80) + (extraHeight or 0) + (showModeSelection and 50 or 0) + (showSpeedAdjustment and 40 or 0) + (showTeleportAdjustment and 40 or 0)
+    local totalHeight = (showAdjustment and 110 or 80) + (extraHeight or 0) + (showModeSelection and 50 or 0) + (showSpeedAdjustment and 40 or 0) + (showTeleportAdjustment and 40 or 0) + (showJumpAdjustment and 40 or 0)
     ButtonFrame.Name = name .. "Frame"
     ButtonFrame.Size = UDim2.new(1, 0, 0, totalHeight)
     ButtonFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
@@ -534,6 +536,71 @@ local function createCheatButton(name, description, id, showAdjustment, extraHei
         }
     end
     
+    -- Если нужно добавить регулировку прыжка
+    if showJumpAdjustment then
+        local JumpFrame = Instance.new("Frame")
+        JumpFrame.Name = "JumpFrame"
+        JumpFrame.Size = UDim2.new(1, -20, 0, 30)
+        JumpFrame.Position = UDim2.new(0, 10, 0, 80)
+        JumpFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+        JumpFrame.BorderSizePixel = 0
+        JumpFrame.Parent = ButtonFrame
+        
+        local JumpCorner = Instance.new("UICorner")
+        JumpCorner.CornerRadius = UDim.new(0, 4)
+        JumpCorner.Parent = JumpFrame
+        
+        local JumpMinusButton = Instance.new("TextButton")
+        JumpMinusButton.Name = "JumpMinusButton"
+        JumpMinusButton.Size = UDim2.new(0, 40, 1, 0)
+        JumpMinusButton.Position = UDim2.new(0, 5, 0, 0)
+        JumpMinusButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+        JumpMinusButton.Text = "-5"
+        JumpMinusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        JumpMinusButton.Font = Enum.Font.GothamBold
+        JumpMinusButton.TextSize = 14
+        JumpMinusButton.Parent = JumpFrame
+        
+        local JumpMinusCorner = Instance.new("UICorner")
+        JumpMinusCorner.CornerRadius = UDim.new(0, 4)
+        JumpMinusCorner.Parent = JumpMinusButton
+        
+        local JumpValueLabel = Instance.new("TextLabel")
+        JumpValueLabel.Name = "JumpValueLabel"
+        JumpValueLabel.Size = UDim2.new(0.5, 0, 1, 0)
+        JumpValueLabel.Position = UDim2.new(0.25, 0, 0, 0)
+        JumpValueLabel.BackgroundTransparency = 1
+        JumpValueLabel.Text = jumpHackValue .. " power"
+        JumpValueLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+        JumpValueLabel.Font = Enum.Font.GothamBold
+        JumpValueLabel.TextSize = 14
+        JumpValueLabel.Parent = JumpFrame
+        
+        local JumpPlusButton = Instance.new("TextButton")
+        JumpPlusButton.Name = "JumpPlusButton"
+        JumpPlusButton.Size = UDim2.new(0, 40, 1, 0)
+        JumpPlusButton.Position = UDim2.new(1, -45, 0, 0)
+        JumpPlusButton.BackgroundColor3 = Color3.fromRGB(60, 200, 60)
+        JumpPlusButton.Text = "+5"
+        JumpPlusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        JumpPlusButton.Font = Enum.Font.GothamBold
+        JumpPlusButton.TextSize = 14
+        JumpPlusButton.Parent = JumpFrame
+        
+        local JumpPlusCorner = Instance.new("UICorner")
+        JumpPlusCorner.CornerRadius = UDim.new(0, 4)
+        JumpPlusCorner.Parent = JumpPlusButton
+        
+        return {
+            frame = ButtonFrame,
+            button = ToggleButton,
+            id = id,
+            jumpMinusButton = JumpMinusButton,
+            jumpPlusButton = JumpPlusButton,
+            jumpValueLabel = JumpValueLabel
+        }
+    end
+    
     return {frame = ButtonFrame, button = ToggleButton, id = id}
 end
 
@@ -544,11 +611,13 @@ local buttons = {
     esp = createCheatButton("ESP", "Подсветка всех игроков", "esp"),
     noclip = createCheatButton("NOCLIP", "Ходить сквозь стены", "noclip"),
     speed = createCheatButton("SPEED HACK", "Регулировка скорости", "speed", false, 0, false, true),
+    jump = createCheatButton("JUMP HACK", "Усиление прыжка", "jump", false, 0, false, false, false, true),
     fullbright = createCheatButton("FULLBRIGHT", "Вечный день и яркость", "fullbright"),
     nofog = createCheatButton("NO FOG", "Убрать туман полностью", "nofog"),
     zoom = createCheatButton("MAX ZOOM", "Увеличить дальность обзора", "zoom"),
     pursuit = createCheatButton("PURSUIT", "Преследование цели", "pursuit", false, 80),
-    teleport = createCheatButton("TELEPORT", "Мгновенный телепорт вперед", "teleport", false, 0, false, false, true)
+    teleport = createCheatButton("TELEPORT", "Мгновенный телепорт вперед", "teleport", false, 0, false, false, true),
+    jumpup = createCheatButton("JUMP UP", "Телепорт вверх на разное расстояние", "jumpup", false, 50)
 }
 
 -- Иконки для кнопок
@@ -558,11 +627,13 @@ local icons = {
     esp = "👁️",
     noclip = "🚷",
     speed = "⚡",
+    jump = "🦘",
     fullbright = "☀️",
     nofog = "🌫️",
     zoom = "🔍",
     pursuit = "🎯🏃‍♂️",
-    teleport = "🚀"
+    teleport = "🚀",
+    jumpup = "⬆️"
 }
 
 for id, buttonData in pairs(buttons) do
@@ -1404,6 +1475,46 @@ local function teleportForward()
     end
 end
 
+-- ========== ТЕЛЕПОРТ ВВЕРХ ==========
+local function teleportUp(height)
+    local character = player.Character
+    if not character then
+        print("[Jump Up] Нет персонажа")
+        return
+    end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then
+        print("[Jump Up] Нет HumanoidRootPart")
+        return
+    end
+    
+    -- Отключаем коллизии
+    local originalCollision = {}
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            originalCollision[part] = part.CanCollide
+            part.CanCollide = false
+        end
+    end
+    
+    -- Мгновенный телепорт вверх (идентично teleportForward)
+    local newPosition = humanoidRootPart.Position + Vector3.new(0, height, 0)
+    humanoidRootPart.CFrame = CFrame.new(newPosition)
+    
+    -- Восстанавливаем коллизии асинхронно чтобы не блокировать телепорт
+    task.spawn(function()
+        task.wait(0.05)
+        for part, canCollide in pairs(originalCollision) do
+            if part and part.Parent then
+                part.CanCollide = canCollide
+            end
+        end
+    end)
+    
+    print("[Jump Up] Мгновенно телепортирован вверх на " .. height .. " studs")
+end
+
 -- ========== УЛУЧШЕННАЯ ЭКРАННАЯ КНОПКА ТЕЛЕПОРТА ==========
 local function createTeleportScreenButton()
     if teleportScreenButton then
@@ -1767,7 +1878,10 @@ local function updateSpeed()
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if humanoid then
             humanoid.WalkSpeed = speedHackValue
-            humanoid.JumpPower = math.min(100, speedHackValue + 20) -- Прыжок пропорционально скорости
+            -- Не трогаем JumpPower если jump hack активен
+            if not settings.jump then
+                humanoid.JumpPower = math.min(100, speedHackValue + 20)
+            end
         end
     end
 end
@@ -1801,6 +1915,65 @@ local function stopSpeed()
         end
     end
     print("[Speed Hack] ❌ Выключен")
+end
+
+-- ========== JUMP HACK ==========
+local function updateJumpDisplay()
+    if buttons.jump and buttons.jump.jumpValueLabel then
+        buttons.jump.jumpValueLabel.Text = jumpHackValue .. " power"
+        if jumpHackValue <= 50 then
+            buttons.jump.jumpValueLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        elseif jumpHackValue <= 100 then
+            buttons.jump.jumpValueLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        elseif jumpHackValue <= 200 then
+            buttons.jump.jumpValueLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        else
+            buttons.jump.jumpValueLabel.TextColor3 = Color3.fromRGB(200, 100, 255)
+        end
+    end
+end
+updateJumpDisplay()
+
+local function updateJump()
+    local character = player.Character
+    if character and settings.jump then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            pcall(function() humanoid.UseJumpPower = true end)
+            humanoid.JumpPower = jumpHackValue
+            pcall(function() humanoid.JumpHeight = jumpHackValue * 0.3 end)
+        end
+    end
+end
+
+local function startJump()
+    if connections.jump then return end
+    
+    print("[Jump Hack] ✅ Активирован (JumpPower: " .. jumpHackValue .. ")")
+    
+    connections.jump = RunService.Heartbeat:Connect(function()
+        if settings.jump then
+            updateJump()
+        end
+    end)
+    
+    updateJump()
+end
+
+local function stopJump()
+    if connections.jump then
+        connections.jump:Disconnect()
+        connections.jump = nil
+    end
+    
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.JumpPower = 50
+        end
+    end
+    print("[Jump Hack] ❌ Выключен")
 end
 
 -- ========== FULLBRIGHT ==========
@@ -1880,7 +2053,7 @@ end
 
 -- ========== MAX ZOOM ==========
 local function startMaxZoom()
-    print("[Max Zoom] ✅ Активирован (Увеличение обзора)")
+    print("[Max Zoom] ✅ Активирован (Увеличение обзора + принудительное 3-е лицо)")
     
     local camera = Workspace.CurrentCamera
     
@@ -1890,23 +2063,59 @@ local function startMaxZoom()
         
         camera.FieldOfView = 100
         
+        -- Принудительно 3-е лицо даже если игра запрещает
+        pcall(function()
+            camera.CameraType = Enum.CameraType.Custom
+        end)
+        
         local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
             pcall(function()
                 humanoid.CameraMaxZoomDistance = 500
+                humanoid.CameraMinZoomDistance = 0.5
             end)
         end
+        
+        -- Блокируем попытки игры вернуть камеру в 1-е лицо
+        connections.zoomForce = RunService.Heartbeat:Connect(function()
+            if not settings.zoom then return end
+            local cam = Workspace.CurrentCamera
+            if cam then
+                pcall(function()
+                    if cam.CameraType == Enum.CameraType.Fixed or cam.CameraType == Enum.CameraType.Scriptable then
+                        cam.CameraType = Enum.CameraType.Custom
+                    end
+                end)
+                local char = player.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        pcall(function()
+                            if hum.CameraMaxZoomDistance < 10 then
+                                hum.CameraMaxZoomDistance = 500
+                            end
+                        end)
+                    end
+                end
+            end
+        end)
         
         connections.zoomRestore = {
             cameraType = originalCameraType,
             fieldOfView = originalFieldOfView
         }
         
-        print("[Max Zoom] ✅ Камера настроена: FOV = 100, MaxZoom = 500")
+        print("[Max Zoom] ✅ Камера: FOV=100, MaxZoom=500, принудительное 3-е лицо")
     end
 end
 
 local function stopMaxZoom()
+    -- Отключаем принудительное 3-е лицо
+    if connections.zoomForce then
+        connections.zoomForce:Disconnect()
+        connections.zoomForce = nil
+    end
+    
     local camera = Workspace.CurrentCamera
     if camera then
         if connections.zoomRestore then
@@ -2300,6 +2509,105 @@ local function stopPursuit()
     print("[Pursuit] ❌ Выключен")
 end
 
+-- ========== ОБРАБОТЧИКИ КНОПОК РЕГУЛИРОВКИ ПРЫЖКА ==========
+if buttons.jump and buttons.jump.jumpMinusButton then
+    buttons.jump.jumpMinusButton.MouseButton1Click:Connect(function()
+        jumpHackValue = math.max(10, jumpHackValue - 5)
+        updateJumpDisplay()
+        print("[Jump Hack] Прыжок уменьшен: " .. jumpHackValue)
+        
+        local originalColor = buttons.jump.jumpMinusButton.BackgroundColor3
+        buttons.jump.jumpMinusButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        wait(0.1)
+        buttons.jump.jumpMinusButton.BackgroundColor3 = originalColor
+        
+        if settings.jump then
+            updateJump()
+        end
+    end)
+end
+
+if buttons.jump and buttons.jump.jumpPlusButton then
+    buttons.jump.jumpPlusButton.MouseButton1Click:Connect(function()
+        jumpHackValue = math.min(500, jumpHackValue + 5)
+        updateJumpDisplay()
+        print("[Jump Hack] Прыжок увеличен: " .. jumpHackValue)
+        
+        local originalColor = buttons.jump.jumpPlusButton.BackgroundColor3
+        buttons.jump.jumpPlusButton.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
+        wait(0.1)
+        buttons.jump.jumpPlusButton.BackgroundColor3 = originalColor
+        
+        if settings.jump then
+            updateJump()
+        end
+    end)
+end
+
+-- ========== КНОПКИ JUMP UP ==========
+if buttons.jumpup and buttons.jumpup.frame then
+    local jumpFrame = buttons.jumpup.frame
+    
+    local heightsFrame = Instance.new("Frame")
+    heightsFrame.Name = "HeightsFrame"
+    heightsFrame.Size = UDim2.new(1, -20, 0, 40)
+    heightsFrame.Position = UDim2.new(0, 10, 0, 80)
+    heightsFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+    heightsFrame.BorderSizePixel = 0
+    heightsFrame.Parent = jumpFrame
+    
+    local hCorner = Instance.new("UICorner")
+    hCorner.CornerRadius = UDim.new(0, 4)
+    hCorner.Parent = heightsFrame
+    
+    local heights = {10, 30, 60, 100}
+    local colors = {
+        Color3.fromRGB(60, 160, 60),
+        Color3.fromRGB(60, 120, 200),
+        Color3.fromRGB(180, 120, 0),
+        Color3.fromRGB(200, 50, 50)
+    }
+    local btnWidth = 1 / #heights
+    
+    for i, h in ipairs(heights) do
+        local btn = Instance.new("TextButton")
+        btn.Name = "Height" .. h
+        btn.Size = UDim2.new(btnWidth, -4, 1, -6)
+        btn.Position = UDim2.new(btnWidth * (i - 1), 2, 0, 3)
+        btn.BackgroundColor3 = colors[i]
+        btn.Text = "+" .. h
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 13
+        btn.Parent = heightsFrame
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 4)
+        btnCorner.Parent = btn
+        
+        local capturedH = h
+        local capturedColor = colors[i]
+        btn.MouseButton1Click:Connect(function()
+            teleportUp(capturedH)
+            btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            wait(0.1)
+            btn.BackgroundColor3 = capturedColor
+        end)
+    end
+    
+    local hintLabel = Instance.new("TextLabel")
+    hintLabel.Name = "HintLabel"
+    hintLabel.Size = UDim2.new(1, -20, 0, 16)
+    hintLabel.Position = UDim2.new(0, 10, 0, 125)
+    hintLabel.BackgroundTransparency = 1
+    hintLabel.Text = "Нажми кнопку — телепорт вверх на N studs"
+    hintLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    hintLabel.Font = Enum.Font.Gotham
+    hintLabel.TextSize = 10
+    hintLabel.TextXAlignment = Enum.TextXAlignment.Left
+    hintLabel.Parent = jumpFrame
+end
+
 -- ========== ОБРАБОТЧИКИ КНОПОК ==========
 local cheatFunctions = {
     autoaim = {on = startAutoAim, off = stopAutoAim},
@@ -2307,6 +2615,7 @@ local cheatFunctions = {
     esp = {on = startESP, off = stopESP},
     noclip = {on = startNoclip, off = stopNoclip},
     speed = {on = startSpeed, off = stopSpeed},
+    jump = {on = startJump, off = stopJump},
     fullbright = {on = startFullbright, off = stopFullbright},
     nofog = {on = startNoFog, off = stopNoFog},
     zoom = {on = startMaxZoom, off = stopMaxZoom},
